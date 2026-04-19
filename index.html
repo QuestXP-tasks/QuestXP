@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>QUESTXP</title>
+
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#08080f">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="icon.png">
+
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Rajdhani:wght@400;500;600&display=swap');
+    *{box-sizing:border-box;margin:0;padding:0}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes slideIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes taskIn{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:translateX(0)}}
+    @keyframes flicker{0%,100%{opacity:1}93%{opacity:.4}95%{opacity:1}97%{opacity:.6}98%{opacity:1}}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+    @keyframes pop{0%{opacity:0;transform:scale(.7)}60%{transform:scale(1.08)}100%{opacity:1;transform:scale(1)}}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .page-in{animation:fadeUp .22s ease}
+    .task-card{animation:taskIn .2s ease}
+    .banner{animation:slideIn .25s ease}
+    .pop{animation:pop .35s ease}
+    body,html{background:#08080f}
+    .ni{background:#0e0e1a!important;color:#00e5ff!important;border:1px solid #00e5ff!important;box-shadow:0 0 6px rgba(0,229,255,.35),inset 0 0 6px rgba(0,0,0,.5)!important;border-radius:6px!important;padding:9px 13px!important;font-family:'Rajdhani',sans-serif!important;font-size:15px!important;outline:none!important;caret-color:#00e5ff;width:100%}
+    .ni::placeholder{color:rgba(0,229,255,.28)!important}
+    .ni:focus{box-shadow:0 0 14px rgba(0,229,255,.7),inset 0 0 6px rgba(0,0,0,.5)!important}
+    .nb{background:transparent!important;cursor:pointer!important;font-family:'Orbitron',monospace!important;font-size:10px!important;font-weight:700!important;letter-spacing:.08em!important;border-radius:6px!important;transition:transform .1s!important}
+    .nb:hover{transform:scale(1.04)!important}
+    .nb:active{transform:scale(.96)!important}
+    .tb{flex:1;background:transparent;cursor:pointer;border:none;padding:11px 4px 9px;display:flex;flex-direction:column;align-items:center;gap:3px;transition:opacity .15s}
+    .tb:hover{opacity:.75}
+    .sc{background:#0e0e1a;border-radius:12px;padding:1.3rem 1.6rem;cursor:pointer;transition:transform .18s;text-align:center}
+    .sc:hover{transform:translateY(-3px) scale(1.015)}
+    .sc:active{transform:scale(.97)}
+    .shop-item{background:#0e0e1a;border-radius:10px;padding:14px;cursor:pointer;transition:transform .15s,border-color .15s;text-align:center}
+    .shop-item:hover{transform:scale(1.03)}
+    .shop-item:active{transform:scale(.97)}
+    </style>
+</head>
+<body>
+
+    <div id="app" style="background:#08080f;min-height:600px;font-family:'Rajdhani',sans-serif"></div>
+
+    <script>
+    const DARK="#08080f",CARD="#0e0e1a";
+    const QP_PER_TASK=50;
+
+    function buildXP(){
+      const t=[];
+      for(let i=1;i<=100;i++){
+        const e=i<=50?Math.pow(1.18,i-1):Math.pow(1.18,49)*Math.pow(1.32,i-50);
+        t.push(Math.round(100*e/10)*10);
+      }
+      return t;
+    }
+    const XP_THRESH=buildXP();
+
+    const LEVELS=[
+      {title:"Rookie",neon:"#888"},
+      {title:"Trainee",neon:"#99aaaa"},{title:"Cadet",neon:"#aabbcc"},{title:"Initiate",neon:"#aaccdd"},
+      {title:"Recruit",neon:"#00e5ff"},{title:"Scout",neon:"#20ffdd"},{title:"Ranger",neon:"#39ff14"},
+      {title:"Tracker",neon:"#55ff22"},{title:"Hunter",neon:"#77ff44"},{title:"Operative",neon:"#00ffcc"},
+      {title:"Agent",neon:"#ffe600"},{title:"Enforcer",neon:"#ffcc00"},{title:"Infiltrator",neon:"#ffaa00"},
+      {title:"Saboteur",neon:"#ff9500"},{title:"Specialist",neon:"#ff8800"},{title:"Tactician",neon:"#ff7700"},
+      {title:"Veteran",neon:"#ff6b35"},{title:"Soldier",neon:"#ff5533"},{title:"Warrior",neon:"#ff4422"},
+      {title:"Elite",neon:"#ff2d78"},{title:"Champion",neon:"#ff00aa"},{title:"Gladiator",neon:"#ee00bb"},
+      {title:"Conqueror",neon:"#dd00cc"},{title:"Warlord",neon:"#bf5fff"},{title:"Commander",neon:"#aa55ff"},
+      {title:"General",neon:"#9944ff"},{title:"Overlord",neon:"#8833ff"},{title:"Archon",neon:"#7722ff"},
+      {title:"Vanguard",neon:"#00bfff"},{title:"Paladin",neon:"#0099ff"},{title:"Crusader",neon:"#0077ff"},
+      {title:"Knight",neon:"#4d9fff"},{title:"Titan",neon:"#ffd700"},{title:"Colossus",neon:"#ffcc00"},
+      {title:"Juggernaut",neon:"#ff9900"},{title:"Destroyer",neon:"#ff4500"},{title:"Ravager",neon:"#ff3300"},
+      {title:"Annihilator",neon:"#ff2200"},{title:"Decimator",neon:"#ff1100"},{title:"Legend",neon:"#e040fb"},
+      {title:"Myth",neon:"#cc33ff"},{title:"Fable",neon:"#bb22ff"},{title:"Mythic",neon:"#ff1744"},
+      {title:"Phantom",neon:"#ff0044"},{title:"Wraith",neon:"#ee0055"},{title:"Specter",neon:"#dd0066"},
+      {title:"Divine",neon:"#c0f0ff"},{title:"Oracle",neon:"#aaeeff"},{title:"Prophet",neon:"#88ddff"},
+      {title:"Immortal",neon:"#00ffcc"},{title:"Undying",neon:"#00ffbb"},{title:"Deathless",neon:"#00ffaa"},
+      {title:"Eternal",neon:"#00ff99"},{title:"Celestial",neon:"#40c4ff"},{title:"Stellar",neon:"#55bbff"},
+      {title:"Galactic",neon:"#6699ff"},{title:"Cosmic",neon:"#7777ff"},{title:"Nebular",neon:"#8866ff"},
+      {title:"Astral",neon:"#9955ff"},{title:"Transcendent",neon:"#ff80ab"},{title:"Ascendant",neon:"#b2ff59"},
+      {title:"Elevated",neon:"#ccff44"},{title:"Sublime",neon:"#eeff33"},{title:"Ancient",neon:"#ffab40"},
+      {title:"Primordial",neon:"#ff9922"},{title:"Archaic",neon:"#ff8800"},{title:"Timeless",neon:"#ff7700"},
+      {title:"Infinite",neon:"#ea80fc"},{title:"Boundless",neon:"#dd66ff"},{title:"Limitless",neon:"#cc55ff"},
+      {title:"Unfathomable",neon:"#bb44ff"},{title:"Void Walker",neon:"#9933ff"},{title:"Abyss Lord",neon:"#8822ff"},
+      {title:"Shadow God",neon:"#7711ff"},{title:"Dark Avatar",neon:"#6600ff"},{title:"Chaos Born",neon:"#ff0055"},
+      {title:"Doom Bringer",neon:"#ff0033"},{title:"World Ender",neon:"#ff0011"},{title:"Oblivion",neon:"#ff2200"},
+      {title:"Demi-God",neon:"#ffdd00"},{title:"Demigod Rex",neon:"#ffee00"},{title:"Deity",neon:"#ffff00"},
+      {title:"War Deity",neon:"#fff133"},{title:"Arch Deity",neon:"#fff566"},{title:"Lesser God",neon:"#00ffff"},
+      {title:"True God",neon:"#33ffff"},{title:"Ancient God",neon:"#55ffff"},{title:"Prime God",neon:"#77ffff"},
+      {title:"Omega",neon:"#ff77ff"},{title:"Alpha Omega",neon:"#ff99ff"},{title:"Omniscient",neon:"#ffbbff"},
+      {title:"Omnipotent",neon:"#ffddff"},{title:"THE ONE",neon:"#fff"},{title:"ASCENDED",neon:"#fff"},
+      {title:"BEYOND",neon:"#fff"},{title:"ABSOLUTE",neon:"#fff"},{title:"GOD TIER",neon:"#fff"},
+    ];
+
+    const AVATARS=[
+      {id:"a0",  emoji:"⚡",name:"Default",    cost:0,    neon:"#888",    owned:true},
+      {id:"a1",  emoji:"🔥",name:"Flame",      cost:200,  neon:"#ff6b35"},
+      {id:"a2",  emoji:"💀",name:"Skull",      cost:300,  neon:"#ff2d78"},
+      {id:"a3",  emoji:"🌙",name:"Lunar",      cost:400,  neon:"#aaeeff"},
+      {id:"a4",  emoji:"⚔️",name:"Blade",      cost:500,  neon:"#ffd700"},
+      {id:"a5",  emoji:"🛡️",name:"Shield",     cost:600,  neon:"#4d9fff"},
+      {id:"a6",  emoji:"👁️",name:"Watcher",    cost:800,  neon:"#bf5fff"},
+      {id:"a7",  emoji:"🌌",name:"Cosmos",     cost:1000, neon:"#00e5ff"},
+      {id:"a8",  emoji:"🐉",name:"Dragon",     cost:1500, neon:"#ff0044"},
+      {id:"a9",  emoji:"🌟",name:"Star",       cost:2000, neon:"#ffe600"},
+      {id:"a10", emoji:"♾️",name:"Infinite",   cost:3000, neon:"#00ffcc"},
+      {id:"a11", emoji:"👑",name:"Crown",      cost:5000, neon:"#ffffff"},
+    ];
+
+    const BOOSTS=[
+      {id:"b1",name:"Quick Learner",   desc:"+10 QP per task",  cost:500,  bonus:10,  neon:"#39ff14"},
+      {id:"b2",name:"Focused Mind",    desc:"+25 QP per task",  cost:1200, bonus:25,  neon:"#ffe600"},
+      {id:"b3",name:"Iron Will",       desc:"+50 QP per task",  cost:2500, bonus:50,  neon:"#ff9500"},
+      {id:"b4",name:"Unstoppable",     desc:"+100 QP per task", cost:5000, bonus:100, neon:"#ff2d78"},
+      {id:"b5",name:"God Mode",        desc:"+250 QP per task", cost:12000,bonus:250, neon:"#ffffff"},
+    ];
+
+    const STREAK_MILESTONES=[
+      {days:365,bonus:500,neon:"#fff"},{days:100,bonus:200,neon:"#fff"},
+      {days:50,bonus:100,neon:"#ea80fc"},{days:30,bonus:75,neon:"#ffd700"},
+      {days:14,bonus:50,neon:"#ff2d78"},{days:7,bonus:30,neon:"#bf5fff"},
+      {days:3,bonus:15,neon:"#00e5ff"},
+    ];
+    const TABS=[
+      {id:"tasks",  label:"MISSIONS",icon:"◈",neon:"#00e5ff"},
+      {id:"rank",   label:"RANK",    icon:"★",neon:"#ffe600"},
+      {id:"shop",   label:"SHOP",    icon:"◆",neon:"#ff2d78"},
+      {id:"streak", label:"STREAK",  icon:"▲",neon:"#ff6b35"},
+    ];
+
+    function getStreakBonus(s){for(const m of STREAK_MILESTONES)if(s>=m.days)return m.bonus;return 0}
+    function getStreakM(s){for(const m of STREAK_MILESTONES)if(s>=m.days)return m;return{neon:"#ff6b35"}}
+    function getLvl(xp){
+      let l=1,acc=0;
+      while(l<=XP_THRESH.length&&xp>=acc+XP_THRESH[l-1]){acc+=XP_THRESH[l-1];l++;}
+      const isMax=l>XP_THRESH.length;
+      const need=isMax?XP_THRESH[XP_THRESH.length-1]:XP_THRESH[l-1];
+      const cur=isMax?need:xp-acc;
+      return{level:Math.min(l,LEVELS.length),cur,need,pct:isMax?100:Math.round(cur/need*100),isMax};
+    }
+    function todayStr(){return new Date().toISOString().split("T")[0]}
+    function ydayStr(){return new Date(Date.now()-86400000).toISOString().split("T")[0]}
+    function fmtDate(s){if(!s)return"—";return new Date(s+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"})}
+
+    const nT=(c,extra={})=>({color:c,textShadow:`0 0 8px ${c}88,0 0 18px ${c}44`,...extra});
+    const nB=(c,extra={})=>({border:`1px solid ${c}`,boxShadow:`0 0 7px ${c}44,inset 0 0 7px rgba(0,0,0,.4)`,...extra});
+
+    let state={
+      screen:"splash", 
+      authMode:"login", 
+      user:null, 
+      tab:"tasks",
+      tasks:[],input:"",
+      xp:0, qp:0, 
+      streak:0,bestStreak:0,lastDate:null,
+      streakHistory:[],
+      ownedAvatars:["a0"],
+      equippedAvatar:"a0",
+      purchasedBoosts:[],
+      levelUpMsg:null,
+      notification:null,
+      authError:"",
+      authUser:"",authPass:"",authEmail:"",authConfirm:"",
+    };
+
+    function storageKey(username){return`questxp-v3-${username}`}
+
+    async function saveState(){
+      if(!state.user)return;
+      const data={
+        tasks:state.tasks,xp:state.xp,qp:state.qp,
+        streak:state.streak,bestStreak:state.bestStreak,lastDate:state.lastDate,
+        streakHistory:state.streakHistory,
+        ownedAvatars:state.ownedAvatars,equippedAvatar:state.equippedAvatar,
+        purchasedBoosts:state.purchasedBoosts,
+      };
+      localStorage.setItem(storageKey(state.user.username), JSON.stringify(data));
+    }
+
+    async function loadUserData(username){
+      const r = localStorage.getItem(storageKey(username));
+      return r ? JSON.parse(r) : null;
+    }
+
+    async function getAccounts(){
+      const r = localStorage.getItem("questxp-accounts");
+      return r ? JSON.parse(r) : {};
+    }
+    async function saveAccounts(accounts){
+      localStorage.setItem("questxp-accounts", JSON.stringify(accounts));
+    }
+
+    function render(){
+      const root=document.getElementById("app");
+      if(!root)return;
+      if(state.screen==="splash"){root.innerHTML=renderSplash();return;}
+      if(state.screen==="auth"){root.innerHTML=renderAuth();attachAuth();return;}
+      if(state.screen==="app"){root.innerHTML=renderApp();attachApp();return;}
+    }
+
+    function renderSplash(){
+      return`<div style="background:${DARK};min-height:600px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem 1.25rem;position:relative;overflow:hidden;background-image:linear-gradient(rgba(0,229,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,.02) 1px,transparent 1px);background-size:40px 40px">
+      <div style="animation:fadeUp .6s ease both;text-align:center;margin-bottom:2.5rem">
+        <div style="font-family:'Orbitron',monospace;font-weight:700;font-size:36px;letter-spacing:.15em;color:#00e5ff;text-shadow:0 0 14px rgba(0,229,255,.9);animation:flicker 7s infinite">QUEST<span style="color:#ff2d78;text-shadow:0 0 14px rgba(255,45,120,.9)">XP</span></div>
+        <div style="color:rgba(255,255,255,.25);font-size:11px;letter-spacing:.25em;font-family:'Orbitron',monospace;margin-top:6px">TASK · EARN · LEVEL · CONQUER</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;width:100%;max-width:380px;animation:fadeUp .7s .1s ease both;opacity:0">
+        <div class="sc" onclick="goAuth('login')" style="border:1px solid #00e5ff;box-shadow:0 0 8px rgba(0,229,255,.3)">
+          <div style="font-family:'Orbitron',monospace;font-weight:700;font-size:17px;color:#00e5ff;text-shadow:0 0 8px rgba(0,229,255,.7);margin-bottom:4px">◈  LOGIN</div>
+          <div style="font-size:13px;color:rgba(255,255,255,.3)">Access your saved missions & rank</div>
+        </div>
+        <div class="sc" onclick="goAuth('register')" style="border:1px solid #ff2d78;box-shadow:0 0 8px rgba(255,45,120,.3)">
+          <div style="font-family:'Orbitron',monospace;font-weight:700;font-size:17px;color:#ff2d78;text-shadow:0 0 8px rgba(255,45,120,.7);margin-bottom:4px">+  CREATE ACCOUNT</div>
+          <div style="font-size:13px;color:rgba(255,255,255,.3)">New recruit? Enlist now — sync across devices</div>
+        </div>
+        <div class="sc" onclick="playAsGuest()" style="border:1px solid rgba(255,255,255,.12)">
+          <div style="font-family:'Orbitron',monospace;font-weight:700;font-size:14px;color:rgba(255,255,255,.35);margin-bottom:3px">PLAY AS GUEST</div>
+          <div style="font-size:12px;color:rgba(255,255,255,.2)">Local only — no sync, no save across devices</div>
+        </div>
+      </div>
+    </div>`;
+    }
+
+    function renderAuth(){
+      const isReg=state.authMode==="register";
+      return`<div style="background:${DARK};min-height:600px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem 1.25rem;background-image:linear-gradient(rgba(0,229,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,.02) 1px,transparent 1px);background-size:40px 40px">
+      <div style="width:100%;max-width:380px;animation:fadeUp .25s ease">
+        <div style="font-family:'Orbitron',monospace;font-weight:700;font-size:24px;letter-spacing:.12em;margin-bottom:6px;color:#00e5ff;text-shadow:0 0 10px rgba(0,229,255,.8)">QUEST<span style="color:#ff2d78;text-shadow:0 0 10px rgba(255,45,120,.8)">XP</span></div>
+        <div style="font-family:'Orbitron',monospace;font-size:11px;color:rgba(255,255,255,.3);letter-spacing:.15em;margin-bottom:28px">${isReg?"CREATE ACCOUNT":"MISSION CONTROL — LOGIN"}</div>
+        ${state.authError?`<div style="background:rgba(255,45,120,.1);border:1px solid rgba(255,45,120,.4);border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:13px;color:#ff2d78;font-family:'Orbitron',monospace;letter-spacing:.04em">${state.authError}</div>`:""}
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <input id="au" class="ni" placeholder="Username" value="${state.authUser||""}" style="font-family:'Orbitron',monospace;letter-spacing:.04em">
+          ${isReg?`<input id="ae" class="ni" placeholder="Email (optional)" value="${state.authEmail||""}" style="font-family:'Orbitron',monospace;letter-spacing:.04em">`:""}
+          <input id="ap" class="ni" type="password" placeholder="Password" style="font-family:'Orbitron',monospace;letter-spacing:.08em">
+          ${isReg?`<input id="ac" class="ni" type="password" placeholder="Confirm Password" style="font-family:'Orbitron',monospace;letter-spacing:.08em">`:""}
+        </div>
+        <button id="authSubmit" class="nb" style="margin-top:18px;width:100%;padding:13px;border:1px solid ${isReg?"#ff2d78":"#00e5ff"};color:${isReg?"#ff2d78":"#00e5ff"};text-shadow:0 0 8px ${isReg?"rgba(255,45,120,.7)":"rgba(0,229,255,.7)"};box-shadow:0 0 8px ${isReg?"rgba(255,45,120,.25)":"rgba(0,229,255,.25)"};font-size:12px">
+          ${isReg?"+ CREATE ACCOUNT & START":"▶ LOGIN"}
+        </button>
+        <div style="display:flex;justify-content:center;gap:6px;margin-top:16px;font-size:12px">
+          <span style="color:rgba(255,255,255,.3)">${isReg?"Already enlisted?":"New recruit?"}</span>
+          <span id="authToggle" style="color:${isReg?"#00e5ff":"#ff2d78"};cursor:pointer;font-family:'Orbitron',monospace;font-size:11px;text-shadow:0 0 6px ${isReg?"rgba(0,229,255,.6)":"rgba(255,45,120,.6)"}">${isReg?"LOGIN":"CREATE ACCOUNT"}</span>
+        </div>
+        <div style="text-align:center;margin-top:10px">
+          <span id="backBtn" style="color:rgba(255,255,255,.2);cursor:pointer;font-size:11px;font-family:'Orbitron',monospace;letter-spacing:.06em">← BACK</span>
+        </div>
+      </div>
+    </div>`;
+    }
+
+    function attachAuth(){
+      document.getElementById("authToggle")?.addEventListener("click",()=>{
+        state.authMode=state.authMode==="login"?"register":"login";
+        state.authError="";render();
+      });
+      document.getElementById("backBtn")?.addEventListener("click",()=>{state.screen="splash";render();});
+      const submit=document.getElementById("authSubmit");
+      if(submit)submit.addEventListener("click",doAuth);
+    }
+
+    async function doAuth(){
+      const user=(document.getElementById("au")?.value||"").trim().toLowerCase();
+      const pass=document.getElementById("ap")?.value||"";
+      const email=document.getElementById("ae")?.value||"";
+      const confirm=document.getElementById("ac")?.value||"";
+      if(!user||!pass){state.authError="Username and password required.";render();return;}
+      const accounts=await getAccounts();
+      if(state.authMode==="register"){
+        if(pass.length<4){state.authError="Password must be 4+ characters.";render();return;}
+        if(pass!==confirm&&confirm){state.authError="Passwords do not match.";render();return;}
+        if(accounts[user]){state.authError="Username already taken.";render();return;}
+        accounts[user]={hash:btoa(pass),email};
+        await saveAccounts(accounts);
+        state.user={username:user,email};
+        await saveState();
+      } else {
+        if(!accounts[user]||accounts[user].hash!==btoa(pass)){
+          state.authError="Invalid username or password.";render();return;
+        }
+        state.user={username:user,email:accounts[user].email||""};
+        const saved=await loadUserData(user);
+        if(saved) Object.assign(state, saved);
+      }
+      state.screen="app";state.authError="";render();
+    }
+
+    function getLvlInfo(){return getLvl(state.xp);}
+    function getBoostBonus(){return state.purchasedBoosts.reduce((a,id)=>{const b=BOOSTS.find(x=>x.id===id);return b?a+b.bonus:a;},0);}
+    function getStreakBonusQP(){return getStreakBonus(state.streak);}
+    function getAvatar(){return AVATARS.find(a=>a.id===state.equippedAvatar)||AVATARS[0];}
+
+    function renderApp(){
+      const {level,cur,need,pct,isMax}=getLvlInfo();
+      const lvl=LEVELS[Math.min(level-1,LEVELS.length-1)];
+      const streakM=getStreakM(state.streak);
+      const av=getAvatar();
+      const boostBonus=getBoostBonus();
+      const streakBonus=getStreakBonusQP();
+      const totalQpPerTask=QP_PER_TASK+boostBonus+streakBonus;
+      const pending=state.tasks.filter(t=>!t.done);
+      const done=state.tasks.filter(t=>t.done);
+      const actMap={};
+      done.forEach(t=>{const d=t.cd||todayStr();actMap[d]=(actMap[d]||0)+1;});
+
+      return`<div style="background:${DARK};min-height:600px;display:flex;flex-direction:column;background-image:linear-gradient(rgba(0,229,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,.02) 1px,transparent 1px);background-size:40px 40px">
+      ${state.levelUpMsg?`<div class="banner" style="border:1px solid ${lvl.neon};box-shadow:0 0 8px ${lvl.neon}44;background:rgba(0,0,0,.3);margin:10px 14px 0;border-radius:8px;padding:12px 20px;text-align:center;font-family:'Orbitron',monospace;font-weight:700;font-size:12px;letter-spacing:.08em;color:${lvl.neon};text-shadow:0 0 8px ${lvl.neon}88">★ LEVEL UP — LV ${state.levelUpMsg.level} ${state.levelUpMsg.title.toUpperCase()} ★</div>`:""}
+      ${state.notification?`<div class="banner pop" style="border:1px solid ${state.notification.neon};box-shadow:0 0 8px ${state.notification.neon}44;background:rgba(0,0,0,.3);margin:10px 14px 0;border-radius:8px;padding:10px 20px;text-align:center;font-family:'Orbitron',monospace;font-weight:700;font-size:11px;letter-spacing:.08em;color:${state.notification.neon};text-shadow:0 0 8px ${state.notification.neon}88">${state.notification.msg}</div>`:""}
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 15px 10px;border-bottom:1px solid rgba(255,255,255,.06)">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:34px;height:34px;border-radius:50%;border:1.5px solid ${lvl.neon};box-shadow:0 0 8px ${lvl.neon}55;display:flex;align-items:center;justify-content:center;font-size:17px">${av.emoji}</div>
+          <div>
+            <div style="font-family:'Orbitron',monospace;font-weight:700;font-size:11px;color:${lvl.neon};text-shadow:0 0 7px ${lvl.neon}88">${state.user?state.user.username.toUpperCase():"GUEST"}</div>
+            <div style="font-size:11px;color:rgba(255,255,255,.3)">LV ${level} · ${lvl.title}</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          ${state.streak>0?`<div style="border:1px solid ${streakM.neon};box-shadow:0 0 6px ${streakM.neon}44;border-radius:20px;padding:3px 9px"><span style="font-family:'Orbitron',monospace;font-weight:700;font-size:10px;color:${streakM.neon};text-shadow:0 0 6px ${streakM.neon}88">▲ ${state.streak}d</span></div>`:""}
+          <div style="border:1px solid #ffe600;box-shadow:0 0 6px rgba(255,230,0,.35);border-radius:20px;padding:3px 11px;display:flex;align-items:center;gap:5px">
+            <span style="font-family:'Orbitron',monospace;font-weight:700;font-size:10px;color:#ffe600;text-shadow:0 0 7px rgba(255,230,0,.8)">◆ ${state.qp.toLocaleString()}</span>
+            <span style="font-size:10px;color:rgba(255,255,255,.3)">QP</span>
+          </div>
+          ${state.user?`<div id="logoutBtn" style="cursor:pointer;font-family:'Orbitron',monospace;font-size:9px;color:rgba(255,255,255,.2);letter-spacing:.06em;padding:3px 7px;border:1px solid rgba(255,255,255,.08);border-radius:4px">EXIT</div>`:""}
+        </div>
+      </div>
+      <div style="flex:1;overflow-y:auto;padding:1.1rem 1rem 1rem">
+        ${state.tab==="tasks"?renderTasks(pending,done,totalQpPerTask,streakBonus,boostBonus):""}
+        ${state.tab==="rank"?renderRank(level,lvl,cur,need,pct,isMax,done):""}
+        ${state.tab==="shop"?renderShop():""}
+        ${state.tab==="streak"?renderStreak(streakM,actMap,done):""}
+      </div>
+      <div style="display:flex;border-top:1px solid rgba(255,255,255,.07);background:rgba(8,8,15,.97)">
+        ${TABS.map(t=>{
+          const active=state.tab===t.id;
+          return`<button class="tb" onclick="setTab('${t.id}')">
+            <span style="font-size:15px;${active?`color:${t.neon};text-shadow:0 0 8px ${t.neon}88`:"color:rgba(255,255,255,.2)"}">${t.icon}</span>
+            <span style="font-family:'Orbitron',monospace;font-size:9px;font-weight:700;letter-spacing:.07em;${active?`color:${t.neon};text-shadow:0 0 6px ${t.neon}66`:"color:rgba(255,255,255,.2)"}">${t.label}</span>
+            ${active?`<div style="width:18px;height:2px;border-radius:1px;background:${t.neon};box-shadow:0 0 5px ${t.neon};margin-top:1px"></div>`:""}
+          </button>`;
+        }).join("")}
+      </div>
+    </div>`;
+    }
+
+    function renderTasks(p,d,total,sB,bB){
+      const TN=["#00e5ff","#ff2d78","#39ff14","#ffe600","#bf5fff","#ff6b35","#00ffcc","#ff00aa","#ffd700","#4d9fff"];
+      return`<div class="page-in">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;background:${CARD};border:1px solid #1e1e30;border-radius:8px;padding:8px 13px">
+        <span style="font-size:11px;color:rgba(255,255,255,.3);font-family:'Orbitron',monospace;letter-spacing:.05em">QP PER TASK</span>
+        <div style="display:flex;align-items:center;gap:7px">
+          <span style="font-family:'Orbitron',monospace;font-weight:700;font-size:12px;color:#ffe600;text-shadow:0 0 6px rgba(255,230,0,.7)">+${QP_PER_TASK} BASE</span>
+          ${sB>0?`<span style="font-family:'Orbitron',monospace;font-weight:700;font-size:12px;color:#ff6b35;text-shadow:0 0 6px rgba(255,107,53,.7)">+${sB} STREAK</span>`:""}
+          ${bB>0?`<span style="font-family:'Orbitron',monospace;font-weight:700;font-size:12px;color:#39ff14;text-shadow:0 0 6px rgba(57,255,20,.7)">+${bB} BOOST</span>`:""}
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:1.1rem">
+        <input id="taskInput" class="ni" placeholder="Enter new mission..." value="${state.input||""}">
+        <button class="nb" id="addTaskBtn" style="border:1px solid #ff2d78;color:#ff2d78;text-shadow:0 0 7px rgba(255,45,120,.7);padding:0 14px;white-space:nowrap">+ ADD</button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:7px">
+        ${p.map((t,i)=>{
+          const neon=TN[t.ni||0];
+          return`<div class="task-card" style="background:${CARD};border:1px solid #1e1e30;border-left:3px solid ${neon};box-shadow:-3px 0 12px ${neon}44;border-radius:8px;padding:11px 13px;display:flex;align-items:center;gap:9px">
+            <span style="flex:1;font-size:14px;color:#e0e0f0;font-weight:500">${escHtml(t.text)}</span>
+            <button class="nb doneBtn" data-id="${t.id}" style="border:1px solid #39ff14;color:#39ff14;text-shadow:0 0 6px rgba(57,255,20,.6);padding:4px 11px;flex-shrink:0">DONE</button>
+            <button class="nb delBtn" data-id="${t.id}" style="border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.22);padding:4px 8px;flex-shrink:0;font-size:11px">✕</button>
+          </div>`;
+        }).join("")}
+      </div>
+    </div>`;
+    }
+
+    function renderRank(level,lvl,cur,need,pct,isMax,done){
+      return`<div class="page-in">
+      <div style="border:1px solid ${lvl.neon};box-shadow:0 0 8px ${lvl.neon}44;background:${CARD};border-radius:12px;padding:1.3rem 1.4rem;margin-bottom:1rem">
+        <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
+          <div style="width:62px;height:62px;border-radius:50%;border:2px solid ${lvl.neon};box-shadow:0 0 14px ${lvl.neon}66;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'Orbitron',monospace;font-weight:700;font-size:22px;color:${lvl.neon}">${level}</div>
+          <div style="flex:1">
+            <div style="font-family:'Orbitron',monospace;font-weight:700;font-size:17px;color:${lvl.neon}">${lvl.title.toUpperCase()}</div>
+            <div style="font-size:13px;color:rgba(255,255,255,.4)">${state.xp.toLocaleString()} XP · ${done.length} missions</div>
+          </div>
+        </div>
+        <div style="height:9px;background:rgba(255,255,255,.06);border-radius:100px;overflow:hidden">
+          <div style="height:100%;width:${pct}%;background:${lvl.neon};box-shadow:0 0 10px ${lvl.neon}88;border-radius:100px;transition:width .5s ease"></div>
+        </div>
+      </div>
+    </div>`;
+    }
+
+    function renderShop(){
+      return`<div class="page-in">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;background:${CARD};border:1px solid #1e1e30;border-radius:8px;padding:10px 14px">
+        <div style="font-family:'Orbitron',monospace;font-weight:700;font-size:26px;color:#ffe600">◆ ${state.qp.toLocaleString()} QP</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:9px">
+        ${AVATARS.map(av=>{
+          const owned=state.ownedAvatars.includes(av.id);
+          const equipped=state.equippedAvatar===av.id;
+          return`<div class="shop-item" data-avid="${av.id}" style="border:1px solid ${equipped?av.neon:"rgba(255,255,255,.08)"}">
+            <div style="font-size:26px">${av.emoji}</div>
+            <div style="font-family:'Orbitron',monospace;font-size:10px;color:${av.neon}">${av.name.toUpperCase()}</div>
+            <div style="font-size:9px">${equipped?"EQUIPPED":owned?"EQUIP":"◆ "+av.cost}</div>
+          </div>`;
+        }).join("")}
+      </div>
+    </div>`;
+    }
+
+    function renderStreak(streakM,actMap,done){
+      return`<div class="page-in">
+      <div style="border:1px solid ${streakM.neon};box-shadow:0 0 8px ${streakM.neon}44;background:${CARD};border-radius:12px;padding:1.3rem 1.4rem;text-align:center">
+        <div style="font-family:'Orbitron',monospace;font-weight:700;font-size:48px;color:${streakM.neon}">${state.streak}</div>
+        <div style="font-size:9px;letter-spacing:.1em;font-family:'Orbitron',monospace;color:rgba(255,255,255,.28)">DAY STREAK</div>
+      </div>
+    </div>`;
+    }
+
+    function attachApp(){
+      document.getElementById("logoutBtn")?.addEventListener("click",()=>{state.user=null;state.screen="splash";render();});
+      document.getElementById("addTaskBtn")?.addEventListener("click",addTask);
+      document.querySelectorAll(".doneBtn").forEach(b=>b.addEventListener("click",()=>completeTask(b.dataset.id)));
+      document.querySelectorAll(".delBtn").forEach(b=>b.addEventListener("click",()=>deleteTask(b.dataset.id)));
+      document.querySelectorAll(".shop-item[data-avid]").forEach(el=>el.addEventListener("click",()=>handleAvatarClick(el.dataset.avid)));
+      document.querySelectorAll(".shop-item[data-boostid]").forEach(el=>el.addEventListener("click",()=>handleBoostClick(el.dataset.boostid)));
+    }
+
+    function setTab(t){state.tab=t;render();}
+    function addTask(){
+      const text=(document.getElementById("taskInput")?.value||"").trim();
+      if(!text)return;
+      state.tasks.push({id:Date.now()+"",text,done:false,ni:state.tasks.length%10});
+      saveState();render();
+    }
+    function completeTask(id){
+      const prevLvl=getLvl(state.xp).level;
+      const qpGain=QP_PER_TASK+getBoostBonus()+getStreakBonusQP();
+      state.tasks=state.tasks.map(t=>t.id===id?{...t,done:true,cd:todayStr()}:t);
+      state.qp+=qpGain; state.xp+=qpGain;
+      const td=todayStr(),yd=ydayStr();
+      if(!state.lastDate||state.lastDate<yd)state.streak=1;
+      else if(state.lastDate===yd)state.streak++;
+      state.lastDate=td;
+      const newLvl=getLvl(state.xp).level;
+      if(newLvl>prevLvl){
+        state.levelUpMsg={level:newLvl,title:LEVELS[newLvl-1].title};
+        setTimeout(()=>{state.levelUpMsg=null;render();},3200);
+      }
+      saveState();render();
+    }
+    function deleteTask(id){state.tasks=state.tasks.filter(t=>t.id!==id);saveState();render();}
+    function handleAvatarClick(avid){
+      const av=AVATARS.find(a=>a.id===avid);
+      if(!av||state.equippedAvatar===avid)return;
+      if(state.ownedAvatars.includes(avid)){state.equippedAvatar=avid;saveState();render();return;}
+      if(state.qp<av.cost){notify("INSUFFICIENT QP","#ff2d78");return;}
+      state.qp-=av.cost;state.ownedAvatars.push(avid);state.equippedAvatar=avid;
+      saveState();render();
+    }
+    function handleBoostClick(bid){
+      const b=BOOSTS.find(x=>x.id===bid);
+      if(!b||state.purchasedBoosts.includes(bid)||state.qp<b.cost)return;
+      state.qp-=b.cost;state.purchasedBoosts.push(bid);saveState();render();
+    }
+    function notify(msg,neon){state.notification={msg,neon};setTimeout(()=>{state.notification=null;render();},2500);}
+    function escHtml(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+
+    window.goAuth=m=>{state.screen="auth";state.authMode=m;render();};
+    window.playAsGuest=async()=>{state.user={username:"guest"};const saved=await loadUserData("guest");if(saved)Object.assign(state,saved);state.screen="app";render();};
+    window.setTab=setTab;
+    render();
+    </script>
+
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js')
+            .then(reg => console.log('SW Registered'))
+            .catch(err => console.log('SW Register Fail', err));
+        });
+      }
+    </script>
+</body>
+</html>
